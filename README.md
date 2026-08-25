@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BookReader Web
 
-## Getting Started
+Next.js frontend for the Book Reader API — OCR’d reading with tap-to-define and vocabulary.
 
-First, run the development server:
+## Setup
+
+1. Start the backend (`bookreaderserver`) on `http://localhost:5000`.
+2. In this folder:
 
 ```bash
+npm install
+cp .env.local.example .env.local   # or use existing .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`.env` / `.env.local`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+GROQ_API_KEY=gsk_...
+```
 
-## Learn More
+Get a free `GROQ_API_KEY` from [Groq Console](https://console.groq.com/keys).  
+It is used only on the server (`POST /api/explain`) with `openai/gpt-oss-20b` — never expose it as `NEXT_PUBLIC_*`.
 
-To learn more about Next.js, take a look at the following resources:
+When a reader taps a word or highlights a sentence, Groq returns a simple explanation plus 3 everyday example sentences.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Routes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Route | Purpose |
+|-------|---------|
+| `/` | Landing (redirects to folders when logged in) |
+| `/login`, `/register` | Auth |
+| `/folders` | Folder list + create |
+| `/folders/[folderId]` | Documents + upload/OCR |
+| `/documents/[id]` | Interactive reader |
+| `/vocabulary` | Saved words |
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+JWT is stored in `localStorage` and sent as `Authorization: Bearer <token>`.
