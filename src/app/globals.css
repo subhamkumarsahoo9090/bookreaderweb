@@ -1,17 +1,82 @@
+@import url("https://fonts.cdnfonts.com/css/opendyslexic");
 @import "tailwindcss";
 
-:root {
-  --paper: #f7f3eb;
-  --ink: #1a2e28;
-  --muted: #5c6f68;
-  --moss: #2f6b4f;
-  --accent: #b54a2e;
-  --wash: #ebe4d6;
-  --line: #d5cbb8;
-  --highlight: #d4e8c2;
-  --sky-wash: #e8f0ec;
+:root,
+[data-theme="paper"] {
+  --paper: #ffffff;
+  --ink: #0b1220;
+  --muted: #64748b;
+  --moss: #1d4ed8;
+  --moss-hover: #1e40af;
+  --accent: #f26722;
+  --wash: #f1f5f9;
+  --line: #e2e8f0;
+  --highlight: #dbeafe;
+  --sky-wash: #eff6ff;
+  --speak-hl: #fef08a;
+  --brand-blue: #3b82f6;
+  --brand-purple: #7c3aed;
+  --brand-green: #10b981;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 40px rgba(15, 23, 42, 0.1);
+  --radius: 14px;
   --background: var(--paper);
   --foreground: var(--ink);
+  --body-bg:
+    radial-gradient(ellipse 80% 50% at 100% -10%, rgba(29, 78, 216, 0.1) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at -10% 100%, rgba(242, 103, 34, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #f8fafc 0%, #ffffff 45%, #f1f5f9 100%);
+}
+
+[data-theme="night"] {
+  --paper: #0b1220;
+  --ink: #e8eef8;
+  --muted: #94a3b8;
+  --moss: #60a5fa;
+  --moss-hover: #93c5fd;
+  --accent: #fb923c;
+  --wash: #151d2e;
+  --line: #243044;
+  --highlight: #1e3a5f;
+  --sky-wash: #111827;
+  --speak-hl: #854d0e;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --body-bg:
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(96, 165, 250, 0.14) 0%, transparent 50%),
+    linear-gradient(180deg, #070b14 0%, var(--paper) 50%, #060a12 100%);
+}
+
+[data-theme="sepia"] {
+  --paper: #f6efe3;
+  --ink: #2c2419;
+  --muted: #7a6a55;
+  --moss: #9a6b2f;
+  --moss-hover: #7c5524;
+  --accent: #c45c26;
+  --wash: #ebe1d0;
+  --line: #d6c7b0;
+  --highlight: #e8d5a8;
+  --sky-wash: #f0e6d4;
+  --speak-hl: #f0c868;
+  --shadow: 0 8px 24px rgba(44, 36, 25, 0.08);
+  --body-bg: linear-gradient(180deg, #efe4d2 0%, var(--paper) 50%, #e8dcc8 100%);
+}
+
+[data-theme="contrast"] {
+  --paper: #ffffff;
+  --ink: #000000;
+  --muted: #222222;
+  --moss: #0000ee;
+  --moss-hover: #0000aa;
+  --accent: #000000;
+  --wash: #f0f0f0;
+  --line: #000000;
+  --highlight: #ffff00;
+  --sky-wash: #ffffff;
+  --speak-hl: #ffff00;
+  --shadow: none;
+  --body-bg: #ffffff;
 }
 
 @theme inline {
@@ -22,19 +87,129 @@
 }
 
 body {
-  background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, #dce8e0 0%, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 0%, #efe6d4 0%, transparent 50%),
-    linear-gradient(180deg, #f3efe4 0%, var(--paper) 40%, #efe8da 100%);
+  background: var(--body-bg);
   color: var(--ink);
   font-family: var(--font-body), system-ui, sans-serif;
   min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* —— Shared UI primitives —— */
+.ui-input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 0.75rem 1rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ui-input:focus {
+  border-color: color-mix(in srgb, var(--moss) 55%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--moss) 18%, transparent);
+}
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 12px;
+  padding: 0.7rem 1.15rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+.ui-btn:active {
+  transform: translateY(1px);
+}
+.ui-btn:disabled {
+  opacity: 0.55;
+}
+.ui-btn-primary {
+  background: var(--moss);
+  color: #fff;
+}
+.ui-btn-primary:hover {
+  background: var(--moss-hover);
+}
+.ui-btn-secondary {
+  background: var(--wash);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.ui-btn-secondary:hover {
+  background: color-mix(in srgb, var(--wash) 70%, var(--line));
+}
+.ui-btn-ghost {
+  background: transparent;
+  color: var(--muted);
+}
+.ui-btn-ghost:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+.ui-btn-outline {
+  background: var(--paper);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+.ui-btn-outline:hover {
+  background: color-mix(in srgb, var(--accent) 8%, var(--paper));
+}
+.ui-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--highlight);
+  color: var(--ink);
+}
+.ui-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.page-title {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.15;
+}
+.page-subtitle {
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 36rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-up-delay,
+  .word-popup,
+  .ui-btn {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -42,26 +217,16 @@ body {
   }
 }
 
-@keyframes soft-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
 .animate-fade-up {
-  animation: fade-up 0.55s ease-out both;
+  animation: fade-up 0.45s ease-out both;
 }
 
 .animate-fade-up-delay {
-  animation: fade-up 0.65s ease-out 0.12s both;
+  animation: fade-up 0.55s ease-out 0.08s both;
 }
 
 .word-popup {
-  animation: fade-up 0.25s ease-out;
+  animation: fade-up 0.22s ease-out;
 }
 
 .reader-word:focus-visible {
@@ -69,11 +234,24 @@ body {
   outline-offset: 1px;
 }
 
+.speak-active {
+  background: var(--speak-hl);
+  border-radius: 0.2rem;
+}
+
+.dyslexia body,
+html.dyslexia body,
+html.dyslexia .reader-prose,
+html.dyslexia textarea {
+  font-family: "OpenDyslexic", var(--font-body), system-ui, sans-serif !important;
+  letter-spacing: 0.03em;
+}
+
 .page-shell {
   width: 100%;
   max-width: 42rem;
   margin-inline: auto;
-  padding: 1.5rem 1rem 3rem;
+  padding: 1.75rem 1rem 3.5rem;
 }
 
 @media (min-width: 640px) {
@@ -85,9 +263,9 @@ body {
 
 .page-shell-wide {
   width: 100%;
-  max-width: 64rem;
+  max-width: 68rem;
   margin-inline: auto;
-  padding: 1.5rem 1rem 3rem;
+  padding: 1.75rem 1rem 3.5rem;
 }
 
 @media (min-width: 640px) {

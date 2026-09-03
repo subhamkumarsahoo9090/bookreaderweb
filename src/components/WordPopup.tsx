@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { vocabularyApi } from "@/lib/api";
 import { explainSelection } from "@/lib/explain";
 import { useAuth } from "@/lib/auth-context";
+import type { SnippetType } from "@/lib/types";
 
 type Props = {
   text: string;
   context?: string;
   documentId?: string;
+  folderId?: string;
   onClose: () => void;
 };
 
@@ -20,7 +22,20 @@ function speak(value: string) {
   window.speechSynthesis.speak(u);
 }
 
-export function WordPopup({ text, context, documentId, onClose }: Props) {
+function guessType(text: string): SnippetType {
+  const t = text.trim();
+  if (!t.includes(" ")) return "word";
+  if (/[.!?]$/.test(t) || t.split(/\s+/).length > 6) return "sentence";
+  return "phrase";
+}
+
+export function WordPopup({
+  text,
+  context,
+  documentId,
+  folderId,
+  onClose,
+}: Props) {
   const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,8 +43,8 @@ export function WordPopup({ text, context, documentId, onClose }: Props) {
   const [sentences, setSentences] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-
-  const isPhrase = text.trim().includes(" ");
+  const [snippetType, setSnippetType] = useState<SnippetType>(guessType(text));
+  const [linkToDoc, setLinkToDoc] = useState(Boolean(documentId));
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +53,7 @@ export function WordPopup({ text, context, documentId, onClose }: Props) {
     setSaved(false);
     setExplanation("");
     setSentences([]);
+    setSnippetType(guessType(text));
 
     explainSelection(text, context)
       .then((res) => {
@@ -64,14 +80,18 @@ export function WordPopup({ text, context, documentId, onClose }: Props) {
     setSaving(true);
     try {
       await vocabularyApi.save(token, {
-        word: text.trim().toLowerCase().slice(0, 120),
+        text: text.trim(),
+        word: text.trim().toLowerCase().slice(0, 200),
+        type: snippetType,
         definition: explanation,
         exampleSentence: sentences[0],
-        documentId,
+        exampleSentences: sentences,
+        documentId: linkToDoc ? documentId || null : null,
+        folderId: linkToDoc ? folderId || null : null,
       });
       setSaved(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save word");
+      setError(e instanceof Error ? e.message : "Could not save");
     } finally {
       setSaving(false);
     }
@@ -92,7 +112,7 @@ export function WordPopup({ text, context, documentId, onClose }: Props) {
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-[var(--moss)]">
-              {isPhrase ? "Selected sentence" : "Word"}
+              {snippetType}
             </p>
             <h2 className="font-[family-name:var(--font-display)] text-2xl text-[var(--ink)]">
               {text}
@@ -159,13 +179,43 @@ export function WordPopup({ text, context, documentId, onClose }: Props) {
                       type="button"
                       onClick={() => speak(sentence)}
                       className="shrink-0 rounded-md px-2 py-1 text-xs text-[var(--muted)] hover:bg-[var(--line)]"
-                      aria-label={`Speak sentence ${i + 1}`}
                     >
                       Speak
                     </button>
                   </li>
                 ))}
               </ol>
+            </section>
+
+            <section className="space-y-2 rounded-xl border border-[var(--line)] p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--moss)]">
+                Save as
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(["word", "phrase", "sentence"] as SnippetType[]).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setSnippetType(t)}
+                    className={`rounded-lg px-3 py-1.5 text-sm capitalize ${
+                      snippetType === t
+                        ? "bg-[var(--ink)] text-[var(--paper)]"
+                        : "bg-[var(--wash)] text-[var(--ink)]"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
+                <input
+                  type="checkbox"
+                  checked={linkToDoc}
+                  onChange={(e) => setLinkToDoc(e.target.checked)}
+                  disabled={!documentId}
+                />
+                Link to this document (uncheck = save separately)
+              </label>
             </section>
           </div>
         )}

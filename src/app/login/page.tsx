@@ -32,50 +32,55 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="page-shell flex min-h-[70vh] flex-col justify-center">
-      <div className="animate-fade-up mx-auto w-full max-w-md">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--ink)]">
-          Welcome back
-        </h1>
-        <p className="mt-2 text-[var(--muted)]">
-          Log in to open your folders and keep reading.
-        </p>
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
+    <div className="flex min-h-[calc(100vh-1px)] items-center justify-center px-4 py-12">
+      <div className="animate-fade-up ui-panel w-full max-w-md p-7 sm:p-9">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo-aksharax.png"
+          alt="AksharaX"
+          className="mb-6 h-9 w-auto max-w-[9rem] object-contain object-left"
+        />
+        <h1 className="page-title !text-2xl">Welcome back</h1>
+        <p className="page-subtitle">Log in to continue your reading library.</p>
+        <form onSubmit={onSubmit} className="mt-7 space-y-4">
           <label className="block">
-            <span className="mb-1.5 block text-sm text-[var(--muted)]">Email</span>
+            <span className="ui-label">Email</span>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line)] bg-[var(--paper)] px-4 py-3 outline-none ring-[var(--moss)] focus:ring-2"
+              className="ui-input"
               autoComplete="email"
             />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm text-[var(--muted)]">Password</span>
+            <span className="ui-label">Password</span>
             <input
               type="password"
               required
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line)] bg-[var(--paper)] px-4 py-3 outline-none ring-[var(--moss)] focus:ring-2"
+              className="ui-input"
               autoComplete="current-password"
             />
           </label>
-          {error && <p className="text-sm text-[var(--accent)]">{error}</p>}
+          {error && <p className="text-sm font-medium text-[var(--accent)]">{error}</p>}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-[var(--moss)] py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+            className="ui-btn ui-btn-primary w-full py-3"
           >
             {submitting ? "Signing in…" : "Log in"}
           </button>
         </form>
         <p className="mt-6 text-center text-sm text-[var(--muted)]">
           New here?{" "}
-          <Link href="/register" className="text-[var(--moss)] underline-offset-2 hover:underline">
+          <Link
+            href="/register"
+            className="font-semibold text-[var(--moss)] underline-offset-2 hover:underline"
+          >
             Create an account
           </Link>
         </p>

@@ -50,8 +50,29 @@ function FolderDetailContent() {
     if (!token || !file || !title.trim()) return;
     setUploading(true);
     setError("");
-    setProgress("Uploading and running OCR… this can take a minute.");
+    setProgress("Uploading and processing… this can take a minute.");
     try {
+      const isAudio =
+        file.type.startsWith("audio/") ||
+        /\.(mp3|wav|webm|ogg|m4a)$/i.test(file.name);
+
+      if (isAudio) {
+        setProgress("Transcribing audio with Whisper…");
+        const { transcribeAudio } = await import("@/lib/api");
+        const transcript = await transcribeAudio(file);
+        const res = await documentsApi.createFromText(token, {
+          folderId,
+          title: title.trim(),
+          extractedText: transcript.text,
+          fileType: "audio",
+        });
+        setTitle("");
+        setFile(null);
+        setProgress("");
+        router.push(`/documents/${res.document._id}`);
+        return;
+      }
+
       const res = await documentsApi.process(token, {
         file,
         folderId,
@@ -126,12 +147,12 @@ function FolderDetailContent() {
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm text-[var(--muted)]">
-            File (jpeg, png, webp, gif, tiff, pdf — max ~15MB)
+            File (images, PDF, TXT, DOCX, RTF, EPUB, audio mp3/wav/m4a — max ~15MB)
           </span>
           <input
             type="file"
             required
-            accept="image/jpeg,image/png,image/webp,image/gif,image/tiff,application/pdf,.pdf"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/tiff,application/pdf,.pdf,.txt,text/plain,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.rtf,application/rtf,.epub,application/epub+zip,audio/*,.mp3,.wav,.m4a,.webm,.ogg"
             onChange={(e) => setFile(e.target.files?.[0] || null)}
             className="w-full text-sm text-[var(--muted)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--wash)] file:px-3 file:py-2 file:text-[var(--ink)]"
           />

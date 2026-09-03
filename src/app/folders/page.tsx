@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import type { Folder } from "@/lib/types";
 
 function FoldersContent() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -74,75 +74,87 @@ function FoldersContent() {
 
   return (
     <div className="page-shell-wide">
-      <div className="animate-fade-up flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="animate-fade-up flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--ink)] sm:text-4xl">
-            Folders
-          </h1>
-          <p className="mt-1 text-[var(--muted)]">
-            Organize scanned chapters and reading material.
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--moss)]">
+            Library
+          </p>
+          <h1 className="page-title mt-1">Folders</h1>
+          <p className="page-subtitle">
+            Welcome{user?.email ? `, ${user.email.split("@")[0]}` : ""}. Organize
+            chapters, scans, and study material in one place.
           </p>
         </div>
+        <span className="ui-chip w-fit">
+          {folders.length} folder{folders.length === 1 ? "" : "s"}
+        </span>
       </div>
 
       <form
         onSubmit={onCreate}
-        className="animate-fade-up-delay mt-8 flex flex-col gap-3 sm:flex-row"
+        className="animate-fade-up-delay ui-panel mt-8 flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:p-2 sm:pl-4"
       >
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="New folder name"
+          placeholder="New folder name — e.g. Chapter 1"
           required
-          className="flex-1 rounded-xl border border-[var(--line)] bg-[var(--paper)] px-4 py-3 outline-none ring-[var(--moss)] focus:ring-2"
+          className="ui-input flex-1 !border-0 !bg-transparent !px-1 !shadow-none focus:!shadow-none sm:!py-2"
         />
-        <button
-          type="submit"
-          disabled={creating}
-          className="rounded-xl bg-[var(--moss)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
-        >
+        <button type="submit" disabled={creating} className="ui-btn ui-btn-primary shrink-0">
           {creating ? "Creating…" : "Create folder"}
         </button>
       </form>
 
-      {error && <p className="mt-4 text-sm text-[var(--accent)]">{error}</p>}
+      {error && (
+        <p className="mt-4 text-sm font-medium text-[var(--accent)]">{error}</p>
+      )}
 
       {loading ? (
-        <div className="mt-12 flex justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--ink)] border-t-transparent" />
+        <div className="mt-16 flex justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--moss)] border-t-transparent" />
         </div>
       ) : folders.length === 0 ? (
-        <p className="mt-12 text-center text-[var(--muted)]">
-          No folders yet. Create one to start uploading.
-        </p>
+        <div className="ui-panel mt-10 px-6 py-14 text-center">
+          <p className="font-[family-name:var(--font-display)] text-xl text-[var(--ink)]">
+            Your library is empty
+          </p>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            Create a folder above, then upload PDF, images, or audio.
+          </p>
+        </div>
       ) : (
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {folders.map((folder, i) => (
             <li
               key={folder._id}
-              className="animate-fade-up group rounded-2xl border border-[var(--line)] bg-[var(--paper)]/80 p-4 transition hover:border-[var(--moss)]/40"
+              className="animate-fade-up group ui-panel relative overflow-hidden p-5 transition hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--moss)_35%,var(--line))]"
               style={{ animationDelay: `${Math.min(i, 8) * 0.04}s` }}
             >
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--moss)] to-[var(--accent)] opacity-80"
+                aria-hidden
+              />
               {renamingId === folder._id ? (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 pt-1">
                   <input
                     value={renameValue}
                     onChange={(e) => setRenameValue(e.target.value)}
-                    className="rounded-lg border border-[var(--line)] px-3 py-2 outline-none ring-[var(--moss)] focus:ring-2"
+                    className="ui-input"
                     autoFocus
                   />
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => onRename(folder._id)}
-                      className="rounded-lg bg-[var(--moss)] px-3 py-1.5 text-sm text-white"
+                      className="ui-btn ui-btn-primary !py-1.5"
                     >
                       Save
                     </button>
                     <button
                       type="button"
                       onClick={() => setRenamingId(null)}
-                      className="rounded-lg px-3 py-1.5 text-sm text-[var(--muted)] hover:bg-[var(--wash)]"
+                      className="ui-btn ui-btn-ghost !py-1.5"
                     >
                       Cancel
                     </button>
@@ -152,31 +164,37 @@ function FoldersContent() {
                 <>
                   <Link
                     href={`/folders/${folder._id}`}
-                    className="font-[family-name:var(--font-display)] text-xl text-[var(--ink)] hover:text-[var(--moss)]"
+                    className="block pt-1 font-[family-name:var(--font-display)] text-xl tracking-tight text-[var(--ink)] transition hover:text-[var(--moss)]"
                   >
                     {folder.name}
                   </Link>
-                  <p className="mt-1 text-xs text-[var(--muted)]">
-                    {new Date(folder.createdAt).toLocaleDateString()}
+                  <p className="mt-2 text-xs text-[var(--muted)]">
+                    Created {new Date(folder.createdAt).toLocaleDateString()}
                   </p>
-                  <div className="mt-4 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+                  <div className="mt-5 flex gap-2 border-t border-[var(--line)] pt-3 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
                     <button
                       type="button"
                       onClick={() => {
                         setRenamingId(folder._id);
                         setRenameValue(folder.name);
                       }}
-                      className="rounded-lg px-2 py-1 text-xs text-[var(--muted)] hover:bg-[var(--wash)]"
+                      className="ui-btn ui-btn-ghost !px-2 !py-1 text-xs"
                     >
                       Rename
                     </button>
                     <button
                       type="button"
                       onClick={() => onDelete(folder._id, folder.name)}
-                      className="rounded-lg px-2 py-1 text-xs text-[var(--accent)] hover:bg-[var(--wash)]"
+                      className="ui-btn ui-btn-ghost !px-2 !py-1 text-xs !text-[var(--accent)]"
                     >
                       Delete
                     </button>
+                    <Link
+                      href={`/folders/${folder._id}`}
+                      className="ui-btn ui-btn-secondary ml-auto !px-3 !py-1 text-xs"
+                    >
+                      Open
+                    </Link>
                   </div>
                 </>
               )}

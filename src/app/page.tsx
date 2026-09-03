@@ -16,7 +16,7 @@ export default function HomePage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--ink)] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--moss)] border-t-transparent" />
       </div>
     );
   }
@@ -24,45 +24,71 @@ export default function HomePage() {
   if (user) return null;
 
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative min-h-[calc(100vh-1px)] overflow-hidden">
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0"
+        aria-hidden
         style={{
           backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232f6b4f' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+            "radial-gradient(circle at 20% 20%, rgba(29,78,216,0.12), transparent 40%), radial-gradient(circle at 85% 15%, rgba(242,103,34,0.1), transparent 35%), linear-gradient(180deg, #f8fafc, #ffffff 50%, #eff6ff)",
         }}
       />
-      <div className="relative mx-auto flex min-h-[calc(100vh-1px)] max-w-5xl flex-col justify-center px-4 py-16 sm:px-6">
-        <p className="animate-fade-up font-[family-name:var(--font-display)] text-5xl tracking-tight text-[var(--ink)] sm:text-7xl">
-          BookReader
-        </p>
-        <h1 className="animate-fade-up-delay mt-4 max-w-xl text-xl text-[var(--muted)] sm:text-2xl">
-          Turn scanned pages into clickable text — speak, define, and save words as you read.
-        </h1>
-        <div className="animate-fade-up-delay mt-8 flex flex-wrap gap-3">
-          <Link
-            href="/register"
-            className="rounded-xl bg-[var(--moss)] px-6 py-3 text-sm font-medium text-white transition hover:opacity-90"
-          >
-            Get started
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-xl border border-[var(--line)] bg-[var(--paper)] px-6 py-3 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--wash)]"
-          >
-            Log in
-          </Link>
+      <div className="relative mx-auto grid min-h-[calc(100vh-1px)] max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
+        <div>
+          <div className="animate-fade-up">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-aksharax.png"
+              alt="AksharaX"
+              width={280}
+              height={156}
+              className="block h-auto w-full max-w-[200px] object-contain object-left sm:max-w-[240px]"
+            />
+          </div>
+          <h1 className="animate-fade-up-delay mt-6 max-w-lg text-2xl font-medium leading-snug tracking-tight text-[var(--ink)] sm:text-3xl">
+            Read smarter. Learn every word. Build a lasting vocabulary.
+          </h1>
+          <p className="animate-fade-up-delay mt-4 max-w-md text-[var(--muted)]">
+            Upload documents or audio, edit text, tap words for meaning, and study
+            with flashcards — all in one calm workspace.
+          </p>
+          <div className="animate-fade-up-delay mt-8 flex flex-wrap gap-3">
+            <Link href="/register" className="ui-btn ui-btn-primary px-7 py-3">
+              Get started
+            </Link>
+            <Link href="/login" className="ui-btn ui-btn-outline px-7 py-3">
+              Log in
+            </Link>
+          </div>
         </div>
+
         <div
-          className="animate-fade-up-delay mt-16 h-40 w-full max-w-2xl rounded-2xl border border-[var(--line)] bg-gradient-to-br from-[var(--sky-wash)] via-[var(--paper)] to-[var(--wash)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+          className="animate-fade-up-delay relative hidden min-h-[320px] overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-[var(--paper)] shadow-[var(--shadow-lg)] lg:block"
           aria-hidden
         >
-          <div className="flex h-full items-end gap-3 p-6">
-            <div className="h-24 w-16 rounded-sm bg-[var(--moss)]/80 shadow-md" />
-            <div className="h-28 w-20 rounded-sm bg-[var(--ink)]/70 shadow-md" />
-            <div className="h-20 w-14 rounded-sm bg-[var(--accent)]/70 shadow-md" />
-            <div className="mb-2 ml-auto hidden text-sm text-[var(--muted)] sm:block">
-              OCR → text → tap to learn
+          <div className="absolute inset-0 bg-gradient-to-br from-[var(--sky-wash)] via-transparent to-[color-mix(in_srgb,var(--accent)_12%,transparent)]" />
+          <div className="relative flex h-full flex-col justify-between p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--moss)]">
+              How it works
+            </p>
+            <ol className="mt-6 space-y-5">
+              {[
+                "Upload a scan, PDF, or lecture audio",
+                "Read with tap-to-explain and translation",
+                "Save words, quiz yourself, grow your streak",
+              ].map((step, i) => (
+                <li key={step} className="flex gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--moss)] text-sm font-semibold text-white">
+                    {i + 1}
+                  </span>
+                  <span className="pt-1 text-[var(--ink)]">{step}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-8 flex items-end gap-3">
+              <div className="h-20 w-14 rounded-lg bg-[var(--moss)] shadow-md" />
+              <div className="h-28 w-16 rounded-lg bg-[var(--ink)] shadow-md" />
+              <div className="h-16 w-12 rounded-lg bg-[var(--accent)] shadow-md" />
             </div>
           </div>
         </div>
