@@ -247,6 +247,26 @@ html.dyslexia textarea {
   letter-spacing: 0.03em;
 }
 
+.font-reader-outfit {
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+.font-reader-fraunces {
+  font-family: var(--font-display), Georgia, serif;
+}
+.font-reader-literata {
+  font-family: var(--font-literata), Georgia, serif;
+}
+.font-reader-noto-devanagari {
+  font-family: var(--font-noto-deva), var(--font-body), sans-serif;
+}
+.font-reader-noto-oriya {
+  font-family: var(--font-noto-oriya), var(--font-body), sans-serif;
+}
+.font-reader-opendyslexic {
+  font-family: "OpenDyslexic", var(--font-body), system-ui, sans-serif;
+  letter-spacing: 0.03em;
+}
+
 .page-shell {
   width: 100%;
   max-width: 42rem;

@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { authApi, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 export default function RegisterPage() {
   const { register, user, loading } = useAuth();
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) router.replace("/folders");
-  }, [loading, user, router]);
+    if (!loading && user) {
+      window.location.replace("/folders");
+    }
+  }, [loading, user]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -23,11 +25,29 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       await register(email.trim(), password);
-      router.replace("/folders");
+      window.location.replace("/folders");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function onGoogle() {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      const res = await authApi.googleStart("login");
+      window.location.href = res.url;
+    } catch (err) {
+      const msg =
+        err instanceof ApiError && err.status === 503
+          ? "Google sign-up is not configured yet. Use email/password."
+          : err instanceof Error
+            ? err.message
+            : "Google sign-up failed";
+      setError(msg);
+      setGoogleLoading(false);
     }
   }
 
@@ -77,6 +97,22 @@ export default function RegisterPage() {
             {submitting ? "Creating…" : "Register"}
           </button>
         </form>
+
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[var(--line)]" />
+          <span className="text-xs text-[var(--muted)]">or</span>
+          <div className="h-px flex-1 bg-[var(--line)]" />
+        </div>
+
+        <button
+          type="button"
+          onClick={onGoogle}
+          disabled={googleLoading}
+          className="ui-btn ui-btn-ghost w-full py-3"
+        >
+          {googleLoading ? "Opening Google…" : "Continue with Google"}
+        </button>
+
         <p className="mt-6 text-center text-sm text-[var(--muted)]">
           Already have an account?{" "}
           <Link

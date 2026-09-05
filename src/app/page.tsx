@@ -1,27 +1,42 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import PixelSwap from "@/components/PixelSwap";
 
 export default function HomePage() {
   const { user, loading } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) router.replace("/folders");
-  }, [loading, user, router]);
+    if (!loading && user) {
+      window.location.replace("/folders");
+    }
+  }, [loading, user]);
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-4">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--moss)] border-t-transparent" />
+        <p className="text-sm text-[var(--muted)]">Checking session…</p>
+        <Link href="/login" className="text-sm font-medium text-[var(--moss)]">
+          Go to login
+        </Link>
       </div>
     );
   }
 
-  if (user) return null;
+  if (user) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-4">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--moss)] border-t-transparent" />
+        <p className="text-sm text-[var(--muted)]">Opening your library…</p>
+        <Link href="/folders" className="text-sm font-medium text-[var(--moss)]">
+          Open folders
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <section className="relative min-h-[calc(100vh-1px)] overflow-hidden">
@@ -62,35 +77,57 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div
-          className="animate-fade-up-delay relative hidden min-h-[320px] overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-[var(--paper)] shadow-[var(--shadow-lg)] lg:block"
-          aria-hidden
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--sky-wash)] via-transparent to-[color-mix(in_srgb,var(--accent)_12%,transparent)]" />
-          <div className="relative flex h-full flex-col justify-between p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--moss)]">
-              How it works
-            </p>
-            <ol className="mt-6 space-y-5">
-              {[
-                "Upload a scan, PDF, or lecture audio",
-                "Read with tap-to-explain and translation",
-                "Save words, quiz yourself, grow your streak",
-              ].map((step, i) => (
-                <li key={step} className="flex gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--moss)] text-sm font-semibold text-white">
-                    {i + 1}
-                  </span>
-                  <span className="pt-1 text-[var(--ink)]">{step}</span>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-8 flex items-end gap-3">
-              <div className="h-20 w-14 rounded-lg bg-[var(--moss)] shadow-md" />
-              <div className="h-28 w-16 rounded-lg bg-[var(--ink)] shadow-md" />
-              <div className="h-16 w-12 rounded-lg bg-[var(--accent)] shadow-md" />
-            </div>
-          </div>
+        <div className="animate-fade-up-delay relative w-full overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-[var(--paper)] shadow-[var(--shadow-lg)]">
+          <PixelSwap
+            className="w-full"
+            aspectRatio="4 / 3"
+            firstContent={
+              <div className="flex h-full w-full flex-col items-center justify-center bg-[linear-gradient(145deg,#eff6ff_0%,#ffffff_45%,#fff7ed_100%)] p-8 text-center">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--moss)]">
+                  Hover me
+                </p>
+                <p className="mt-4 font-[family-name:var(--font-display)] text-2xl text-[var(--ink)] sm:text-3xl">
+                  Discover AksharaX
+                </p>
+                <p className="mt-2 max-w-xs text-sm text-[var(--muted)]">
+                  Move over this card to reveal how reading becomes learning.
+                </p>
+              </div>
+            }
+            secondContent={
+              <div className="flex h-full w-full flex-col justify-between bg-[linear-gradient(160deg,#1d4ed8_0%,#0b1220_100%)] p-8 text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-200">
+                  How it works
+                </p>
+                <ol className="mt-6 space-y-4">
+                  {[
+                    "Upload a scan, PDF, or lecture audio",
+                    "Read with tap-to-explain and translation",
+                    "Save words, quiz yourself, grow your streak",
+                  ].map((step, i) => (
+                    <li key={step} className="flex gap-3 text-sm sm:text-base">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-sm font-semibold">
+                        {i + 1}
+                      </span>
+                      <span className="pt-1">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="mt-6 text-sm text-blue-100">You found the path.</p>
+              </div>
+            }
+            pixelSize={48}
+            gap={0}
+            pixelRadius={0}
+            pixelSpin={0}
+            pixelScale={0.35}
+            duration={1400}
+            pixelDuration={450}
+            pattern="random"
+            randomness={0}
+            fade
+            trigger="hover"
+          />
         </div>
       </div>
     </section>

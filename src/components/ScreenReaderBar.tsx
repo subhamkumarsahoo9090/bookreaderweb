@@ -188,7 +188,7 @@ export function SpokenDocument({
 
   return (
     <article
-      className="reader-prose whitespace-pre-wrap font-[family-name:var(--font-display)] text-lg leading-[1.85] text-[var(--ink)] sm:text-xl"
+      className="reader-prose whitespace-pre-wrap text-lg leading-[1.85] text-[var(--ink)] sm:text-xl"
       aria-live="polite"
     >
       {sentences.map((sentence, i) => (
@@ -199,12 +199,17 @@ export function SpokenDocument({
           {sentence.split(/(\s+)/).map((part, j) =>
             /^\s+$/.test(part) ? (
               <span key={j}>{part}</span>
-            ) : /[A-Za-z]/.test(part) ? (
+            ) : /[\p{L}\p{M}]/u.test(part) ? (
               <button
                 key={j}
                 type="button"
                 className="reader-word rounded-sm px-0.5 hover:bg-[var(--highlight)]"
-                onClick={() => onSelectWord?.(part.replace(/[^A-Za-z'-]/g, ""), sentence)}
+                onClick={() =>
+                  onSelectWord?.(
+                    part.replace(/[^\p{L}\p{M}'-]/gu, ""),
+                    sentence
+                  )
+                }
               >
                 {part}
               </button>

@@ -8,7 +8,10 @@ import type {
   Note,
   QuizQuestion,
   ReadingProgress,
+  SharedBook,
+  SharedBookMeta,
   ThemeId,
+  FontFamilyId,
   User,
   VocabularyEntry,
   SnippetType,
@@ -101,8 +104,27 @@ export const authApi = {
       method: "POST",
       body: { email, password },
     }),
-  me: (token: string) =>
-    api<{ success: boolean; user: User }>("/api/auth/me", { token }),
+  me: (token: string, opts?: { timeoutMs?: number }) =>
+    api<{ success: boolean; user: User; googleConfigured?: boolean }>(
+      "/api/auth/me",
+      { token, timeoutMs: opts?.timeoutMs }
+    ),
+  googleStart: (state: "login" | "drive" = "login") =>
+    api<{ success: boolean; url: string }>(
+      `/api/auth/google?state=${state}`
+    ),
+  driveStatus: (token: string) =>
+    api<{
+      success: boolean;
+      connected: boolean;
+      googleConfigured: boolean;
+      rootFolderId: string | null;
+    }>("/api/auth/drive", { token }),
+  disconnectDrive: (token: string) =>
+    api<{ success: boolean; message: string }>("/api/auth/drive", {
+      method: "DELETE",
+      token,
+    }),
   updateSettings: (
     token: string,
     body: {
@@ -110,6 +132,9 @@ export const authApi = {
       dyslexiaFont?: boolean;
       lineSpacing?: number;
       preferredLanguage?: string;
+      readingFontFamily?: FontFamilyId;
+      editorFontFamily?: FontFamilyId;
+      fontSize?: number;
       role?: string;
     }
   ) =>
@@ -160,21 +185,29 @@ export const documentsApi = {
       file,
       folderId,
       title,
-    }: { file: File; folderId: string; title: string }
+      ocrLang,
+    }: { file: File; folderId: string; title: string; ocrLang?: string }
   ) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("folderId", folderId);
     formData.append("title", title);
     formData.append("fileType", inferClientFileType(file));
+    if (ocrLang) formData.append("ocrLang", ocrLang);
     return api<{ success: boolean; document: Document }>(
       "/api/documents/process",
       { method: "POST", token, formData, timeoutMs: 180_000 }
     );
   },
-  recognize: (token: string, file: Blob, filename = "handwriting.png") => {
+  recognize: (
+    token: string,
+    file: Blob,
+    filename = "handwriting.png",
+    ocrLang?: string
+  ) => {
     const formData = new FormData();
     formData.append("file", file, filename);
+    if (ocrLang) formData.append("ocrLang", ocrLang);
     return api<{ success: boolean; text: string; wordCount: number }>(
       "/api/documents/recognize",
       { method: "POST", token, formData, timeoutMs: 120_000 }
@@ -187,6 +220,7 @@ export const documentsApi = {
       title: string;
       extractedText: string;
       fileType?: string;
+      language?: string;
     }
   ) =>
     api<{ success: boolean; document: Document }>("/api/documents/from-text", {
@@ -215,6 +249,76 @@ export const documentsApi = {
       method: "DELETE",
       token,
     }),
+};
+
+export const sharedLibraryApi = {
+  list: (token: string) =>
+    api<{ success: boolean; books: SharedBookMeta[] }>("/api/shared-library", {
+      token,
+    }),
+  get: (token: string, id: string) =>
+    api<{ success: boolean; book: SharedBook }>(`/api/shared-library/${id}`, {
+      token,
+    }),
+  adminList: (token: string) =>
+    api<{ success: boolean; books: SharedBookMeta[] }>(
+      "/api/shared-library/admin/all",
+      { token }
+    ),
+  adminUpload: (
+    token: string,
+    {
+      file,
+      title,
+      description,
+      category,
+      tags,
+      ocrLang,
+      published,
+    }: {
+      file: File;
+      title: string;
+      description?: string;
+      category?: string;
+      tags?: string;
+      ocrLang?: string;
+      published?: boolean;
+    }
+  ) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("title", title);
+    if (description) formData.append("description", description);
+    if (category) formData.append("category", category);
+    if (tags) formData.append("tags", tags);
+    if (ocrLang) formData.append("ocrLang", ocrLang);
+    formData.append("published", published === false ? "false" : "true");
+    formData.append("fileType", inferClientFileType(file));
+    return api<{ success: boolean; book: SharedBookMeta }>(
+      "/api/shared-library/admin",
+      { method: "POST", token, formData, timeoutMs: 180_000 }
+    );
+  },
+  adminUpdate: (
+    token: string,
+    id: string,
+    body: {
+      title?: string;
+      description?: string;
+      category?: string;
+      tags?: string | string[];
+      published?: boolean;
+    }
+  ) =>
+    api<{ success: boolean; book: SharedBookMeta }>(
+      `/api/shared-library/admin/${id}`,
+      { method: "PATCH", token, body }
+    ),
+  adminDelete: (token: string, id: string) =>
+    api<{ success: boolean; message: string }>(
+      `/api/shared-library/admin/${id}`,
+      { method: "DELETE", token }
+    ),
 };
 
 export const vocabularyApi = {

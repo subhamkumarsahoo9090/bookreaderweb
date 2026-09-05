@@ -6,17 +6,32 @@ import { useParams } from "next/navigation";
 import { RequireAuth } from "@/components/RequireAuth";
 import { WordPopup } from "@/components/WordPopup";
 import { HandwritingPad } from "@/components/HandwritingPad";
+import { FloatingEditorPanel } from "@/components/FloatingEditorPanel";
 import {
   ScreenReaderBar,
   SpokenDocument,
 } from "@/components/ScreenReaderBar";
-import { documentsApi, notesApi, progressApi, annotationsApi, libraryApi, generateQuiz, translateText } from "@/lib/api";
+import {
+  documentsApi,
+  notesApi,
+  progressApi,
+  annotationsApi,
+  libraryApi,
+  generateQuiz,
+  translateText,
+  authApi,
+} from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import type { Annotation, Document, QuizQuestion } from "@/lib/types";
+import type { Annotation, Document, FontFamilyId, QuizQuestion } from "@/lib/types";
+import { FONT_OPTIONS } from "@/lib/types";
 
 type Selection = { text: string; context?: string };
 type Mode = "read" | "edit";
 type SaveState = "saved" | "dirty" | "saving" | "error";
+
+function fontClass(id: FontFamilyId) {
+  return `font-reader-${id}`;
+}
 
 function DocumentReaderContent() {
   const { token, user, setUser } = useAuth();
@@ -43,6 +58,17 @@ function DocumentReaderContent() {
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [translation, setTranslation] = useState("");
   const [shareMsg, setShareMsg] = useState("");
+
+  const [readingFont, setReadingFont] = useState<FontFamilyId>(
+    user?.settings?.readingFontFamily || "fraunces"
+  );
+  const [editorFont, setEditorFont] = useState<FontFamilyId>(
+    user?.settings?.editorFontFamily || "outfit"
+  );
+  const [fontSize, setFontSize] = useState(user?.settings?.fontSize || 18);
+  const [lineSpacing, setLineSpacing] = useState(
+    user?.settings?.lineSpacing || 1.6
+  );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -77,16 +103,34 @@ function DocumentReaderContent() {
   useEffect(() => {
     if (user?.settings?.dyslexiaFont) {
       globalThis.document.documentElement.classList.add("dyslexia");
+      setReadingFont("opendyslexic");
     } else {
       globalThis.document.documentElement.classList.remove("dyslexia");
+      if (user?.settings?.readingFontFamily) {
+        setReadingFont(user.settings.readingFontFamily);
+      }
     }
-    if (user?.settings?.lineSpacing) {
-      globalThis.document.documentElement.style.setProperty(
-        "--reader-line-height",
-        String(user.settings.lineSpacing)
-      );
+    if (user?.settings?.lineSpacing) setLineSpacing(user.settings.lineSpacing);
+    if (user?.settings?.fontSize) setFontSize(user.settings.fontSize);
+    if (user?.settings?.editorFontFamily) {
+      setEditorFont(user.settings.editorFontFamily);
     }
-  }, [user?.settings?.dyslexiaFont, user?.settings?.lineSpacing]);
+  }, [user?.settings]);
+
+  async function persistFontPrefs(partial: {
+    readingFontFamily?: FontFamilyId;
+    editorFontFamily?: FontFamilyId;
+    fontSize?: number;
+    lineSpacing?: number;
+  }) {
+    if (!token) return;
+    try {
+      const res = await authApi.updateSettings(token, partial);
+      setUser(res.user);
+    } catch {
+      /* local still applied */
+    }
+  }
 
   function reportProgress(pct: number, offset = 0) {
     if (!token || !document) return;
@@ -105,6 +149,7 @@ function DocumentReaderContent() {
       }
     }, 800);
   }
+
   const persist = useCallback(
     async (text: string) => {
       if (!token || !document) return;
@@ -216,6 +261,7 @@ function DocumentReaderContent() {
     if (saveState === "error") return "Save failed";
     return "Saved";
   }, [saveState]);
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -251,6 +297,7 @@ function DocumentReaderContent() {
           <p className="mt-2 text-sm text-[var(--muted)]">
             {document.wordCount} words · {document.fileType.toUpperCase()} ·{" "}
             {Math.round(percent)}% read
+            {document.storage === "drive" ? " · Drive" : ""}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button
@@ -275,6 +322,24 @@ function DocumentReaderContent() {
             >
               Edit
             </button>
+            <label className="flex items-center gap-1 rounded-lg bg-[var(--wash)] px-2 py-1 text-sm">
+              Font
+              <select
+                value={readingFont}
+                onChange={(e) => {
+                  const f = e.target.value as FontFamilyId;
+                  setReadingFont(f);
+                  persistFontPrefs({ readingFontFamily: f });
+                }}
+                className="rounded border-0 bg-transparent text-sm outline-none"
+              >
+                {FONT_OPTIONS.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               type="button"
               onClick={() => setShowReader((v) => !v)}
@@ -313,27 +378,6 @@ function DocumentReaderContent() {
             >
               Mark complete
             </button>
-            {mode === "edit" && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowHandwrite(true)}
-                  className="rounded-lg bg-[var(--wash)] px-3 py-1.5 text-sm"
-                >
-                  Handwrite
-                </button>
-                <button
-                  type="button"
-                  onClick={manualSave}
-                  className="rounded-lg bg-[var(--moss)] px-3 py-1.5 text-sm text-white"
-                >
-                  Save now
-                </button>
-                <span className="self-center text-xs text-[var(--muted)]">
-                  {statusLabel}
-                </span>
-              </>
-            )}
           </div>
           {shareMsg && (
             <p className="mt-2 break-all text-xs text-[var(--moss)]">{shareMsg}</p>
@@ -355,7 +399,7 @@ function DocumentReaderContent() {
 
         <div
           className="mt-8"
-          style={{ lineHeight: "var(--reader-line-height, 1.85)" }}
+          style={{ lineHeight: lineSpacing }}
           onScroll={(e) => {
             const el = e.currentTarget;
             const max = el.scrollHeight - el.clientHeight;
@@ -378,31 +422,52 @@ function DocumentReaderContent() {
             sel.removeAllRanges();
           }}
         >
-          {mode === "edit" ? (
-            <textarea
-              ref={textareaRef}
-              value={draft}
-              onChange={(e) => onDraftChange(e.target.value)}
-              className="min-h-[60vh] w-full rounded-2xl border border-[var(--line)] bg-[var(--paper)] p-4 font-[family-name:var(--font-display)] text-lg leading-relaxed text-[var(--ink)] outline-none ring-[var(--moss)] focus:ring-2"
-              aria-label="Edit document text"
-              spellCheck
+          <p className="mb-4 text-sm text-[var(--muted)]">
+            {mode === "edit"
+              ? "Drag the floating editor anywhere. Reading view stays visible behind it."
+              : "Tap a word or highlight a sentence for meaning and examples."}
+          </p>
+          <div
+            className={fontClass(readingFont)}
+            style={{ fontSize, lineHeight: lineSpacing }}
+          >
+            <SpokenDocument
+              text={draft}
+              activeIndex={showReader && mode === "read" ? activeSentence : null}
+              onSelectWord={(word, context) =>
+                mode === "read" ? setSelected({ text: word, context }) : undefined
+              }
             />
-          ) : (
-            <>
-              <p className="mb-4 text-sm text-[var(--muted)]">
-                Tap a word or highlight a sentence for meaning and examples.
-              </p>
-              <SpokenDocument
-                text={draft}
-                activeIndex={showReader ? activeSentence : null}
-                onSelectWord={(word, context) =>
-                  setSelected({ text: word, context })
-                }
-              />
-            </>
-          )}
+          </div>
         </div>
       </div>
+
+      {mode === "edit" && (
+        <FloatingEditorPanel
+          value={draft}
+          onChange={onDraftChange}
+          onSave={manualSave}
+          onClose={() => setMode("read")}
+          onHandwrite={() => setShowHandwrite(true)}
+          statusLabel={statusLabel}
+          fontFamily={editorFont}
+          onFontFamilyChange={(f) => {
+            setEditorFont(f);
+            persistFontPrefs({ editorFontFamily: f });
+          }}
+          fontSize={fontSize}
+          onFontSizeChange={(n) => {
+            setFontSize(n);
+            persistFontPrefs({ fontSize: n });
+          }}
+          lineSpacing={lineSpacing}
+          onLineSpacingChange={(n) => {
+            setLineSpacing(n);
+            persistFontPrefs({ lineSpacing: n });
+          }}
+          textareaRef={textareaRef}
+        />
+      )}
 
       {showReader && mode === "read" && (
         <ScreenReaderBar

@@ -7,6 +7,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { documentsApi, foldersApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { DocumentMeta, Folder } from "@/lib/types";
+import { OCR_LANG_OPTIONS } from "@/lib/types";
 
 function FolderDetailContent() {
   const { token } = useAuth();
@@ -18,6 +19,7 @@ function FolderDetailContent() {
   const [documents, setDocuments] = useState<DocumentMeta[]>([]);
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [ocrLang, setOcrLang] = useState("auto");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -77,6 +79,7 @@ function FolderDetailContent() {
         file,
         folderId,
         title: title.trim(),
+        ocrLang,
       });
       setTitle("");
       setFile(null);
@@ -144,6 +147,22 @@ function FolderDetailContent() {
             placeholder="e.g. Chapter 1 scan"
             className="w-full rounded-xl border border-[var(--line)] bg-white/50 px-4 py-3 outline-none ring-[var(--moss)] focus:ring-2"
           />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm text-[var(--muted)]">
+            OCR / document language
+          </span>
+          <select
+            value={ocrLang}
+            onChange={(e) => setOcrLang(e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] bg-white/50 px-4 py-3 outline-none ring-[var(--moss)] focus:ring-2"
+          >
+            {OCR_LANG_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm text-[var(--muted)]">

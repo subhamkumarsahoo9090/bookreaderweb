@@ -8,13 +8,14 @@ import { THEMES, useTheme } from "@/lib/theme-context";
 
 const primaryLinks = [
   { href: "/folders", label: "Folders" },
+  { href: "/shared", label: "Books" },
   { href: "/search", label: "Search" },
   { href: "/study", label: "Study" },
   { href: "/notes", label: "Notes" },
-  { href: "/vocabulary", label: "Vocab" },
 ];
 
 const moreLinks = [
+  { href: "/vocabulary", label: "Vocab" },
   { href: "/classroom", label: "Classroom" },
   { href: "/library", label: "Library" },
   { href: "/settings", label: "Settings" },
@@ -37,7 +38,10 @@ export function AppNav() {
 
   if (!user) return null;
 
-  const moreActive = moreLinks.some((l) => pathname.startsWith(l.href));
+  const adminLinks =
+    user.role === "admin" ? [{ href: "/admin", label: "Admin" }] : [];
+  const allMore = [...moreLinks, ...adminLinks];
+  const moreActive = allMore.some((l) => pathname.startsWith(l.href));
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--paper)]/85 backdrop-blur-xl">
@@ -93,7 +97,7 @@ export function AppNav() {
                 role="menu"
                 className="absolute right-0 top-full z-50 mt-2 min-w-[11rem] overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--paper)] py-1 shadow-[var(--shadow-lg)]"
               >
-                {[...primaryLinks, ...moreLinks].map((l) => {
+                {[...primaryLinks, ...allMore].map((l) => {
                   const active = pathname.startsWith(l.href);
                   const isPrimary = primaryLinks.some((p) => p.href === l.href);
                   return (

@@ -19,6 +19,7 @@ type AuthContextValue = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
 };
@@ -31,20 +32,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const saved = localStorage.getItem(TOKEN_KEY);
     if (!saved) {
       setLoading(false);
       return;
     }
     setToken(saved);
+
+    // Never leave the UI stuck on the spinner if the API is slow/down
+    const failSafe = window.setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 8000);
+
     authApi
-      .me(saved)
-      .then((res) => setUser(res.user))
+      .me(saved, { timeoutMs: 7000 })
+      .then((res) => {
+        if (!cancelled) setUser(res.user);
+      })
       .catch(() => {
+        if (cancelled) return;
         localStorage.removeItem(TOKEN_KEY);
         setToken(null);
+        setUser(null);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        window.clearTimeout(failSafe);
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(failSafe);
+    };
   }, []);
 
   const persist = useCallback((nextToken: string, nextUser: User) => {
@@ -69,6 +89,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [persist]
   );
 
+  const loginWithToken = useCallback(
+    async (nextToken: string) => {
+      localStorage.setItem(TOKEN_KEY, nextToken);
+      setToken(nextToken);
+      const res = await authApi.me(nextToken);
+      setUser(res.user);
+    },
+    []
+  );
+
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
@@ -76,8 +106,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, token, loading, login, register, logout, setUser }),
-    [user, token, loading, login, register, logout]
+    () => ({
+      user,
+      token,
+      loading,
+      login,
+      register,
+      loginWithToken,
+      logout,
+      setUser,
+    }),
+    [user, token, loading, login, register, loginWithToken, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

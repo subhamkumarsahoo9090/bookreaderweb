@@ -1,5 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Outfit } from "next/font/google";
+import {
+  Fraunces,
+  Outfit,
+  Literata,
+  Noto_Sans_Devanagari,
+  Noto_Sans_Oriya,
+} from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { AppNav } from "@/components/AppNav";
@@ -17,6 +23,23 @@ const body = Outfit({
   subsets: ["latin"],
 });
 
+const literata = Literata({
+  variable: "--font-literata",
+  subsets: ["latin"],
+});
+
+const notoDeva = Noto_Sans_Devanagari({
+  variable: "--font-noto-deva",
+  subsets: ["devanagari"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const notoOriya = Noto_Sans_Oriya({
+  variable: "--font-noto-oriya",
+  subsets: ["oriya"],
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "AksharaX — Read, edit, learn",
   description:
@@ -27,7 +50,6 @@ export const metadata: Metadata = {
     icon: [
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon.png", type: "image/png" },
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
@@ -49,7 +71,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${body.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} ${literata.variable} ${notoDeva.variable} ${notoOriya.variable} h-full antialiased`}
       data-theme="paper"
       suppressHydrationWarning
     >

@@ -1,6 +1,6 @@
-# BookReader Web
+# AksharaX Web
 
-Next.js frontend for Book Reader — reading, vocabulary, study, classroom, public library, PWA.
+Next.js frontend for AksharaX — reading, vocabulary, study, classroom, shared books, Google login/Drive, PWA.
 
 ## Setup
 
@@ -22,14 +22,18 @@ GROQ_API_KEY=gsk_...
 
 | Route | Purpose |
 |-------|---------|
-| `/folders` | Library folders + multi-format / audio upload |
-| `/documents/[id]` | Read/Edit, quiz, translate, highlight, share, progress |
+| `/login` `/register` | Email or Continue with Google |
+| `/folders` | Library folders + multi-format / audio upload + OCR language |
+| `/documents/[id]` | Read + floating Edit panel, quiz, translate, fonts |
+| `/shared` | AksharaX Books (admin-published) |
+| `/admin` | Admin catalog upload (role=admin only) |
 | `/study` | Spaced-repetition flashcards |
 | `/search` | Full-library search |
-| `/notes` | Notes |
-| `/vocabulary` | Snippets |
+| `/notes` `/vocabulary` | Notes & snippets |
 | `/classroom` | Teacher classes + invite codes |
 | `/library` | Public shared docs |
-| `/settings` | Dyslexia, export, PWA, language |
+| `/settings` | Fonts, Drive connect, dyslexia, export, PWA |
 
-Sync across devices = same login against MongoDB Atlas.
+## Admin login
+
+Seeded on server start (see server README): use the configured `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
