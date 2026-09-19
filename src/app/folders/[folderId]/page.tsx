@@ -6,22 +6,28 @@ import { useParams, useRouter } from "next/navigation";
 import { RequireAuth } from "@/components/RequireAuth";
 import { documentsApi, foldersApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/ToastProvider";
 import type { DocumentMeta, Folder } from "@/lib/types";
 import { OCR_LANG_OPTIONS } from "@/lib/types";
 
 function FolderDetailContent() {
   const { token } = useAuth();
+  const toast = useToast();
   const params = useParams();
   const router = useRouter();
   const folderId = params.folderId as string;
 
   const [folder, setFolder] = useState<Folder | null>(null);
+  const [path, setPath] = useState<{ _id: string; name: string }[]>([]);
+  const [children, setChildren] = useState<Folder[]>([]);
   const [documents, setDocuments] = useState<DocumentMeta[]>([]);
+  const [subfolderName, setSubfolderName] = useState("");
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [ocrLang, setOcrLang] = useState("auto");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [creatingSub, setCreatingSub] = useState(false);
   const [error, setError] = useState("");
   const [progress, setProgress] = useState("");
 
@@ -29,12 +35,13 @@ function FolderDetailContent() {
     if (!token) return;
     setError("");
     try {
-      const [foldersRes, docsRes] = await Promise.all([
-        foldersApi.list(token),
+      const [folderRes, docsRes] = await Promise.all([
+        foldersApi.get(token, folderId),
         documentsApi.list(token, folderId),
       ]);
-      const found = foldersRes.folders.find((f) => f._id === folderId) || null;
-      setFolder(found);
+      setFolder(folderRes.folder);
+      setPath(folderRes.path || []);
+      setChildren(folderRes.children || []);
       setDocuments(docsRes.documents);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load folder");
@@ -44,8 +51,49 @@ function FolderDetailContent() {
   }, [token, folderId]);
 
   useEffect(() => {
+    setLoading(true);
     load();
   }, [load]);
+
+  async function onCreateSubfolder(e: FormEvent) {
+    e.preventDefault();
+    if (!token || !subfolderName.trim()) return;
+    setCreatingSub(true);
+    setError("");
+    try {
+      const res = await foldersApi.create(
+        token,
+        subfolderName.trim(),
+        folderId
+      );
+      setChildren((prev) => [res.folder, ...prev]);
+      setSubfolderName("");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not create subfolder"
+      );
+    } finally {
+      setCreatingSub(false);
+    }
+  }
+
+  async function onDeleteSubfolder(id: string, name: string) {
+    if (!token) return;
+    const ok = await toast.confirm(
+      `Delete “${name}” and everything inside it?`,
+      { confirmLabel: "Delete" }
+    );
+    if (!ok) return;
+    try {
+      await foldersApi.remove(token, id);
+      setChildren((prev) => prev.filter((f) => f._id !== id));
+      toast.success("Subfolder deleted");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Delete failed";
+      setError(msg);
+      toast.error(msg);
+    }
+  }
 
   async function onUpload(e: FormEvent) {
     e.preventDefault();
@@ -101,12 +149,18 @@ function FolderDetailContent() {
 
   async function onDeleteDoc(id: string, docTitle: string) {
     if (!token) return;
-    if (!confirm(`Delete “${docTitle}”?`)) return;
+    const ok = await toast.confirm(`Delete “${docTitle}”?`, {
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
     try {
       await documentsApi.remove(token, id);
       setDocuments((prev) => prev.filter((d) => d._id !== id));
+      toast.success("Document deleted");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      const msg = err instanceof Error ? err.message : "Delete failed";
+      setError(msg);
+      toast.error(msg);
     }
   }
 
@@ -118,24 +172,118 @@ function FolderDetailContent() {
     );
   }
 
+  const parentHref =
+    folder?.parentId != null
+      ? `/folders/${folder.parentId}`
+      : "/folders";
+
   return (
     <div className="page-shell-wide">
-      <Link
-        href="/folders"
-        className="text-sm text-[var(--muted)] hover:text-[var(--ink)]"
-      >
-        ← All folders
-      </Link>
-      <h1 className="animate-fade-up mt-3 font-[family-name:var(--font-display)] text-3xl text-[var(--ink)] sm:text-4xl">
-        {folder?.name || "Folder"}
-      </h1>
+      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-[var(--muted)]">
+        <Link href="/folders" className="hover:text-[var(--ink)]">
+          Folders
+        </Link>
+        {path.map((crumb) => (
+          <span key={crumb._id} className="contents">
+            <span aria-hidden>/</span>
+            <Link
+              href={`/folders/${crumb._id}`}
+              className={
+                crumb._id === folderId
+                  ? "font-medium text-[var(--ink)]"
+                  : "hover:text-[var(--ink)]"
+              }
+            >
+              {crumb.name}
+            </Link>
+          </span>
+        ))}
+      </nav>
+
+      <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="animate-fade-up font-[family-name:var(--font-display)] text-3xl text-[var(--ink)] sm:text-4xl">
+            {folder?.name || "Folder"}
+          </h1>
       <p className="mt-1 text-[var(--muted)]">
-        Upload an image or PDF — only extracted text is stored.
+        Add subfolders or upload documents here. For Odia/Hindi scans, pick the
+        matching OCR language (not Auto) for best full-page reading.
       </p>
+        </div>
+        <Link
+          href={parentHref}
+          className="text-sm text-[var(--moss)] hover:underline"
+        >
+          ← Up one level
+        </Link>
+      </div>
+
+      {error && (
+        <p className="mt-4 text-sm font-medium text-[var(--accent)]">{error}</p>
+      )}
+
+      <section className="animate-fade-up-delay mt-8">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl text-[var(--ink)]">
+          Subfolders
+        </h2>
+        <form
+          onSubmit={onCreateSubfolder}
+          className="ui-panel mt-3 flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:p-2 sm:pl-4"
+        >
+          <input
+            value={subfolderName}
+            onChange={(e) => setSubfolderName(e.target.value)}
+            placeholder="New subfolder name — e.g. Chapter 1"
+            required
+            className="ui-input flex-1 !border-0 !bg-transparent !px-1 !shadow-none focus:!shadow-none sm:!py-2"
+          />
+          <button
+            type="submit"
+            disabled={creatingSub}
+            className="ui-btn ui-btn-primary shrink-0"
+          >
+            {creatingSub ? "Creating…" : "Create subfolder"}
+          </button>
+        </form>
+
+        {children.length === 0 ? (
+          <p className="mt-4 text-sm text-[var(--muted)]">
+            No subfolders yet. Create one above to nest material.
+          </p>
+        ) : (
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {children.map((child) => (
+              <li key={child._id} className="ui-panel flex flex-col p-4">
+                <Link
+                  href={`/folders/${child._id}`}
+                  className="font-[family-name:var(--font-display)] text-lg text-[var(--ink)] hover:text-[var(--moss)]"
+                >
+                  {child.name}
+                </Link>
+                <div className="mt-3 flex gap-2">
+                  <Link
+                    href={`/folders/${child._id}`}
+                    className="ui-btn ui-btn-secondary !px-3 !py-1 text-xs"
+                  >
+                    Open
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteSubfolder(child._id, child.name)}
+                    className="ui-btn ui-btn-ghost !px-2 !py-1 text-xs !text-[var(--accent)]"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <form
         onSubmit={onUpload}
-        className="animate-fade-up-delay mt-8 space-y-4 rounded-2xl border border-[var(--line)] bg-[var(--paper)]/70 p-5"
+        className="animate-fade-up-delay mt-10 space-y-4 rounded-2xl border border-[var(--line)] bg-[var(--paper)]/70 p-5"
       >
         <h2 className="font-medium text-[var(--ink)]">Upload document</h2>
         <label className="block">
@@ -179,7 +327,6 @@ function FolderDetailContent() {
         {progress && (
           <p className="animate-pulse text-sm text-[var(--moss)]">{progress}</p>
         )}
-        {error && <p className="text-sm text-[var(--accent)]">{error}</p>}
         <button
           type="submit"
           disabled={uploading || !file}

@@ -5,10 +5,12 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { notesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/ToastProvider";
 import type { Note } from "@/lib/types";
 
 function NotesContent() {
   const { token } = useAuth();
+  const toast = useToast();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -68,9 +70,18 @@ function NotesContent() {
   }
 
   async function onDelete(id: string) {
-    if (!token || !confirm("Delete this note?")) return;
-    await notesApi.remove(token, id);
-    setNotes((prev) => prev.filter((n) => n._id !== id));
+    if (!token) return;
+    const ok = await toast.confirm("Delete this note?", {
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+    try {
+      await notesApi.remove(token, id);
+      setNotes((prev) => prev.filter((n) => n._id !== id));
+      toast.success("Note deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
   }
 
   return (

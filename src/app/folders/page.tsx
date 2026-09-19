@@ -5,10 +5,12 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { foldersApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/ToastProvider";
 import type { Folder } from "@/lib/types";
 
 function FoldersContent() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -21,7 +23,7 @@ function FoldersContent() {
     if (!token) return;
     setError("");
     try {
-      const res = await foldersApi.list(token);
+      const res = await foldersApi.list(token, "root");
       setFolders(res.folders);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load folders");
@@ -43,8 +45,11 @@ function FoldersContent() {
       const res = await foldersApi.create(token, name.trim());
       setFolders((prev) => [res.folder, ...prev]);
       setName("");
+      toast.success("Folder created");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create folder");
+      const msg = err instanceof Error ? err.message : "Could not create folder";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setCreating(false);
     }
@@ -56,19 +61,29 @@ function FoldersContent() {
       const res = await foldersApi.rename(token, id, renameValue.trim());
       setFolders((prev) => prev.map((f) => (f._id === id ? res.folder : f)));
       setRenamingId(null);
+      toast.success("Folder renamed");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Rename failed");
+      const msg = err instanceof Error ? err.message : "Rename failed";
+      setError(msg);
+      toast.error(msg);
     }
   }
 
   async function onDelete(id: string, folderName: string) {
     if (!token) return;
-    if (!confirm(`Delete “${folderName}” and all its documents?`)) return;
+    const ok = await toast.confirm(
+      `Delete “${folderName}” and all nested folders + documents inside it?`,
+      { confirmLabel: "Delete" }
+    );
+    if (!ok) return;
     try {
       await foldersApi.remove(token, id);
       setFolders((prev) => prev.filter((f) => f._id !== id));
+      toast.success("Folder deleted");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      const msg = err instanceof Error ? err.message : "Delete failed";
+      setError(msg);
+      toast.error(msg);
     }
   }
 
@@ -82,7 +97,7 @@ function FoldersContent() {
           <h1 className="page-title mt-1">Folders</h1>
           <p className="page-subtitle">
             Welcome{user?.email ? `, ${user.email.split("@")[0]}` : ""}. Organize
-            chapters, scans, and study material in one place.
+            chapters in folders — and nest folders inside folders.
           </p>
         </div>
         <span className="ui-chip w-fit">
@@ -97,7 +112,7 @@ function FoldersContent() {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="New folder name — e.g. Chapter 1"
+          placeholder="New folder name — e.g. Class 10"
           required
           className="ui-input flex-1 !border-0 !bg-transparent !px-1 !shadow-none focus:!shadow-none sm:!py-2"
         />
@@ -120,7 +135,7 @@ function FoldersContent() {
             Your library is empty
           </p>
           <p className="mt-2 text-sm text-[var(--muted)]">
-            Create a folder above, then upload PDF, images, or audio.
+            Create a folder above, then open it to add subfolders or upload files.
           </p>
         </div>
       ) : (

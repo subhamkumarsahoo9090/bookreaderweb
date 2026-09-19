@@ -45,15 +45,15 @@ export function AppNav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--paper)]/85 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:h-16 sm:px-6">
+      <div className="mx-auto flex h-14 w-full max-w-none items-center gap-3 px-3 sm:h-16 sm:px-4 lg:px-5">
         <Link href="/folders" className="shrink-0" aria-label="AksharaX home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo-aksharax.png"
             alt="AksharaX"
-            width={128}
-            height={72}
-            className="block h-8 w-auto max-w-[8.5rem] object-contain object-left"
+            width={199}
+            height={113}
+            className="block h-[3.12rem] w-auto max-w-[13.26rem] object-contain object-left"
           />
         </Link>
 

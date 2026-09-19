@@ -41,17 +41,20 @@ export default function SharedDocumentPage() {
   }
 
   return (
-    <div className="page-shell">
+    <div className="page-shell-full">
       <Link href="/library" className="text-sm text-[var(--muted)]">
         ← Public library
       </Link>
-      <h1 className="mt-4 font-[family-name:var(--font-display)] text-3xl">
+      <h1 className="mt-4 font-[family-name:var(--font-display)] text-3xl sm:text-4xl">
         {doc.title}
       </h1>
       <p className="mt-2 text-sm text-[var(--muted)]">
         Shared reading · {doc.wordCount} words
       </p>
-      <article className="mt-8 whitespace-pre-wrap font-[family-name:var(--font-display)] text-lg leading-[1.85]">
+      <article
+        className="reader-prose reader-para mt-8 w-full max-w-none whitespace-pre-wrap text-lg leading-[1.85] sm:text-xl"
+        style={{ textAlign: "justify", textAlignLast: "start" }}
+      >
         {doc.extractedText}
       </article>
     </div>

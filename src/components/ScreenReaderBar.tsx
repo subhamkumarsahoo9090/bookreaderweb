@@ -9,8 +9,30 @@ type Props = {
 };
 
 function splitSentences(text: string): string[] {
-  const parts = text.match(/[^.!?\n]+[.!?]+|[^.!?\n]+$/g);
-  return (parts || [text]).map((s) => s.trim()).filter(Boolean);
+  const raw = String(text || "")
+    .replace(/\r\n/g, "\n")
+    // Soft wrap: single newlines become spaces so text fills the screen width
+    .replace(/([^\n])\n(?!\n)/g, "$1 ")
+    .trim();
+  if (!raw) return [];
+
+  // Hard breaks (blank lines) stay as paragraph boundaries
+  const blocks = raw.split(/\n+/);
+  const out: string[] = [];
+  for (const block of blocks) {
+    const trimmed = block.replace(/[ \t]+/g, " ").trim();
+    if (!trimmed) continue;
+    const parts = trimmed.match(/[^.!?।॥]+[.!?।॥]+|[^.!?।॥]+$/g);
+    if (parts && parts.length) {
+      parts.forEach((p) => {
+        const s = p.trim();
+        if (s) out.push(s);
+      });
+    } else {
+      out.push(trimmed);
+    }
+  }
+  return out.length ? out : [raw.replace(/\s+/g, " ").trim()];
 }
 
 export function ScreenReaderBar({
@@ -113,7 +135,7 @@ export function ScreenReaderBar({
       role="region"
       aria-label="Screen reader controls"
     >
-      <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
+      <div className="mx-auto flex w-full max-w-none flex-wrap items-center gap-2 px-4">
         <span className="text-xs font-medium uppercase tracking-wide text-[var(--moss)]">
           Read aloud
         </span>
@@ -188,22 +210,24 @@ export function SpokenDocument({
 
   return (
     <article
-      className="reader-prose whitespace-pre-wrap text-lg leading-[1.85] text-[var(--ink)] sm:text-xl"
+      className="reader-prose w-full max-w-none text-lg leading-[1.85] text-[var(--ink)] sm:text-xl lg:text-[1.35rem]"
       aria-live="polite"
     >
       {sentences.map((sentence, i) => (
-        <span
+        <p
           key={i}
-          className={activeIndex === i ? "speak-active" : undefined}
+          className={`reader-para ${
+            activeIndex === i ? "speak-active" : ""
+          }`}
         >
           {sentence.split(/(\s+)/).map((part, j) =>
             /^\s+$/.test(part) ? (
-              <span key={j}>{part}</span>
+              <span key={j}> </span>
             ) : /[\p{L}\p{M}]/u.test(part) ? (
               <button
                 key={j}
                 type="button"
-                className="reader-word rounded-sm px-0.5 hover:bg-[var(--highlight)]"
+                className="reader-word"
                 onClick={() =>
                   onSelectWord?.(
                     part.replace(/[^\p{L}\p{M}'-]/gu, ""),
@@ -216,8 +240,8 @@ export function SpokenDocument({
             ) : (
               <span key={j}>{part}</span>
             )
-          )}{" "}
-        </span>
+          )}
+        </p>
       ))}
     </article>
   );

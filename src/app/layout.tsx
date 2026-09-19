@@ -10,6 +10,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { AppNav } from "@/components/AppNav";
 import { PwaRegister } from "@/components/PwaRegister";
+import { ToastProvider } from "@/components/ToastProvider";
 import "./globals.css";
 
 const display = Fraunces({
@@ -78,9 +79,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <AuthProvider>
           <ThemeProvider>
-            <PwaRegister />
-            <AppNav />
-            <main className="flex-1">{children}</main>
+            <ToastProvider>
+              <PwaRegister />
+              <AppNav />
+              <main className="flex-1">{children}</main>
+            </ToastProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

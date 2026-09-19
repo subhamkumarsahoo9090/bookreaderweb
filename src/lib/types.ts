@@ -39,12 +39,18 @@ export type User = {
 export type Folder = {
   _id: string;
   userId: string;
+  parentId?: string | null;
   name: string;
   isPublic?: boolean;
   shareSlug?: string;
   driveFolderId?: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type FolderPathItem = {
+  _id: string;
+  name: string;
 };
 
 export type FileType =

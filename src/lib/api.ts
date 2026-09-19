@@ -146,13 +146,27 @@ export const authApi = {
 };
 
 export const foldersApi = {
-  list: (token: string) =>
-    api<{ success: boolean; folders: Folder[] }>("/api/folders", { token }),
-  create: (token: string, name: string) =>
+  list: (token: string, parentId?: "root" | string) => {
+    const q =
+      parentId === undefined
+        ? ""
+        : `?parentId=${encodeURIComponent(parentId)}`;
+    return api<{ success: boolean; folders: Folder[] }>(`/api/folders${q}`, {
+      token,
+    });
+  },
+  get: (token: string, id: string) =>
+    api<{
+      success: boolean;
+      folder: Folder;
+      path: { _id: string; name: string }[];
+      children: Folder[];
+    }>(`/api/folders/${id}`, { token }),
+  create: (token: string, name: string, parentId?: string | null) =>
     api<{ success: boolean; folder: Folder }>("/api/folders", {
       method: "POST",
       token,
-      body: { name },
+      body: parentId ? { name, parentId } : { name },
     }),
   rename: (token: string, id: string, name: string) =>
     api<{ success: boolean; folder: Folder }>(`/api/folders/${id}`, {

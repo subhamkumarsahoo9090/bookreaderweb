@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import { RequireAuth } from "@/components/RequireAuth";
 import { WordPopup } from "@/components/WordPopup";
 import { HandwritingPad } from "@/components/HandwritingPad";
-import { FloatingEditorPanel } from "@/components/FloatingEditorPanel";
 import {
   ScreenReaderBar,
   SpokenDocument,
@@ -88,6 +87,13 @@ function DocumentReaderContent() {
       setAnnotations(ann.annotations);
       if (prog.progress) {
         setPercent(prog.progress.percent || 0);
+      }
+      // Auto-pick a glyph-capable font for Indic docs (OpenDyslexic lacks Odia)
+      const lang = String(res.document.language || "").toLowerCase();
+      if (lang.includes("ori") || lang.includes("odia")) {
+        setReadingFont("noto-oriya");
+      } else if (lang.includes("hin") || lang.includes("mar") || lang.includes("san")) {
+        setReadingFont("noto-devanagari");
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load document");
@@ -283,46 +289,47 @@ function DocumentReaderContent() {
 
   return (
     <div className="pb-28">
-      <div className="page-shell">
+      <div className="page-shell-full">
         <Link
           href={`/folders/${document.folderId}`}
-          className="text-sm text-[var(--muted)] hover:text-[var(--ink)]"
+          className="inline-flex items-center gap-1 text-sm text-[var(--muted)] transition hover:text-[var(--moss)]"
         >
           ← Back to folder
         </Link>
-        <header className="mt-4 border-b border-[var(--line)] pb-4">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--ink)] sm:text-4xl">
-            {document.title}
-          </h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">
-            {document.wordCount} words · {document.fileType.toUpperCase()} ·{" "}
-            {Math.round(percent)}% read
-            {document.storage === "drive" ? " · Drive" : ""}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+
+        <header className="mt-4 rounded-2xl border border-[var(--line)] bg-[var(--paper)]/90 p-4 shadow-[var(--shadow)] sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-tight text-[var(--ink)] sm:text-4xl">
+                {document.title}
+              </h1>
+              <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--muted)]">
+                <span className="ui-chip">{document.wordCount} words</span>
+                <span className="ui-chip">{document.fileType.toUpperCase()}</span>
+                <span className="ui-chip">{Math.round(percent)}% read</span>
+                {document.storage === "drive" && (
+                  <span className="ui-chip">Drive</span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="reader-toolbar mt-4 border-t border-[var(--line)] pt-3">
             <button
               type="button"
               onClick={() => setMode("read")}
-              className={`rounded-lg px-3 py-1.5 text-sm ${
-                mode === "read"
-                  ? "bg-[var(--ink)] text-[var(--paper)]"
-                  : "bg-[var(--wash)]"
-              }`}
+              className={`tool-btn ${mode === "read" ? "is-active" : ""}`}
             >
               Read
             </button>
             <button
               type="button"
               onClick={() => setMode("edit")}
-              className={`rounded-lg px-3 py-1.5 text-sm ${
-                mode === "edit"
-                  ? "bg-[var(--ink)] text-[var(--paper)]"
-                  : "bg-[var(--wash)]"
-              }`}
+              className={`tool-btn ${mode === "edit" ? "is-active" : ""}`}
             >
               Edit
             </button>
-            <label className="flex items-center gap-1 rounded-lg bg-[var(--wash)] px-2 py-1 text-sm">
+            <label className="tool-select inline-flex items-center gap-1.5">
               Font
               <select
                 value={readingFont}
@@ -331,7 +338,7 @@ function DocumentReaderContent() {
                   setReadingFont(f);
                   persistFontPrefs({ readingFontFamily: f });
                 }}
-                className="rounded border-0 bg-transparent text-sm outline-none"
+                className="border-0 bg-transparent text-[var(--ink)] outline-none"
               >
                 {FONT_OPTIONS.map((f) => (
                   <option key={f.id} value={f.id}>
@@ -343,9 +350,7 @@ function DocumentReaderContent() {
             <button
               type="button"
               onClick={() => setShowReader((v) => !v)}
-              className={`rounded-lg px-3 py-1.5 text-sm ${
-                showReader ? "bg-[var(--moss)] text-white" : "bg-[var(--wash)]"
-              }`}
+              className={`tool-btn ${showReader ? "is-accent" : ""}`}
               aria-pressed={showReader}
             >
               Screen reader
@@ -353,31 +358,44 @@ function DocumentReaderContent() {
             <button
               type="button"
               onClick={() => setNoteOpen(true)}
-              className="rounded-lg bg-[var(--wash)] px-3 py-1.5 text-sm"
+              className="tool-btn"
             >
               Add note
             </button>
-            <button
-              type="button"
-              onClick={runQuiz}
-              className="rounded-lg bg-[var(--wash)] px-3 py-1.5 text-sm"
-            >
+            <button type="button" onClick={runQuiz} className="tool-btn">
               AI quiz
             </button>
-            <button
-              type="button"
-              onClick={toggleShare}
-              className="rounded-lg bg-[var(--wash)] px-3 py-1.5 text-sm"
-            >
+            <button type="button" onClick={toggleShare} className="tool-btn">
               {document.isPublic ? "Unshare" : "Share public"}
             </button>
             <button
               type="button"
               onClick={() => reportProgress(100, draft.length)}
-              className="rounded-lg bg-[var(--wash)] px-3 py-1.5 text-sm"
+              className="tool-btn"
             >
               Mark complete
             </button>
+            {mode === "edit" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowHandwrite(true)}
+                  className="tool-btn"
+                >
+                  Handwrite
+                </button>
+                <button
+                  type="button"
+                  onClick={manualSave}
+                  className="tool-btn is-accent"
+                >
+                  Save now
+                </button>
+                <span className="px-1 text-xs text-[var(--muted)]">
+                  {statusLabel}
+                </span>
+              </>
+            )}
           </div>
           {shareMsg && (
             <p className="mt-2 break-all text-xs text-[var(--moss)]">{shareMsg}</p>
@@ -398,7 +416,7 @@ function DocumentReaderContent() {
         </header>
 
         <div
-          className="mt-8"
+          className="reader-surface mt-5"
           style={{ lineHeight: lineSpacing }}
           onScroll={(e) => {
             const el = e.currentTarget;
@@ -422,52 +440,80 @@ function DocumentReaderContent() {
             sel.removeAllRanges();
           }}
         >
-          <p className="mb-4 text-sm text-[var(--muted)]">
+          <p className="mb-5 text-sm text-[var(--muted)]">
             {mode === "edit"
-              ? "Drag the floating editor anywhere. Reading view stays visible behind it."
+              ? "Edit the text below. Changes auto-save."
               : "Tap a word or highlight a sentence for meaning and examples."}
           </p>
-          <div
-            className={fontClass(readingFont)}
-            style={{ fontSize, lineHeight: lineSpacing }}
-          >
-            <SpokenDocument
-              text={draft}
-              activeIndex={showReader && mode === "read" ? activeSentence : null}
-              onSelectWord={(word, context) =>
-                mode === "read" ? setSelected({ text: word, context }) : undefined
-              }
-            />
-          </div>
+          {mode === "edit" ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
+                <label className="tool-select inline-flex items-center gap-1.5">
+                  Editor font
+                  <select
+                    value={editorFont}
+                    onChange={(e) => {
+                      const f = e.target.value as FontFamilyId;
+                      setEditorFont(f);
+                      persistFontPrefs({ editorFontFamily: f });
+                    }}
+                    className="border-0 bg-transparent text-[var(--ink)] outline-none"
+                  >
+                    {FONT_OPTIONS.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="tool-select inline-flex items-center gap-2">
+                  Size
+                  <input
+                    type="range"
+                    min={14}
+                    max={28}
+                    value={fontSize}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setFontSize(n);
+                      persistFontPrefs({ fontSize: n });
+                    }}
+                    className="w-24"
+                  />
+                </label>
+              </div>
+              <textarea
+                ref={textareaRef}
+                value={draft}
+                onChange={(e) => onDraftChange(e.target.value)}
+                className={`min-h-[calc(100vh-16rem)] w-full max-w-none rounded-xl border border-[var(--line)] bg-[var(--wash)]/40 p-4 text-left text-[var(--ink)] outline-none ring-[var(--moss)] focus:bg-[var(--paper)] focus:ring-2 sm:p-6 ${fontClass(editorFont)}`}
+                style={{
+                  fontSize: Math.max(fontSize, 18),
+                  lineHeight: lineSpacing,
+                }}
+                aria-label="Edit document text"
+                spellCheck
+              />
+            </div>
+          ) : (
+            <div
+              className={`w-full max-w-none ${fontClass(readingFont)}`}
+              style={{
+                fontSize: Math.max(fontSize, 18),
+                lineHeight: Math.max(lineSpacing, 1.7),
+              }}
+            >
+              <SpokenDocument
+                text={draft}
+                activeIndex={showReader ? activeSentence : null}
+                onSelectWord={(word, context) =>
+                  setSelected({ text: word, context })
+                }
+              />
+            </div>
+          )}
         </div>
       </div>
-
-      {mode === "edit" && (
-        <FloatingEditorPanel
-          value={draft}
-          onChange={onDraftChange}
-          onSave={manualSave}
-          onClose={() => setMode("read")}
-          onHandwrite={() => setShowHandwrite(true)}
-          statusLabel={statusLabel}
-          fontFamily={editorFont}
-          onFontFamilyChange={(f) => {
-            setEditorFont(f);
-            persistFontPrefs({ editorFontFamily: f });
-          }}
-          fontSize={fontSize}
-          onFontSizeChange={(n) => {
-            setFontSize(n);
-            persistFontPrefs({ fontSize: n });
-          }}
-          lineSpacing={lineSpacing}
-          onLineSpacingChange={(n) => {
-            setLineSpacing(n);
-            persistFontPrefs({ lineSpacing: n });
-          }}
-          textareaRef={textareaRef}
-        />
-      )}
 
       {showReader && mode === "read" && (
         <ScreenReaderBar
@@ -515,7 +561,7 @@ function DocumentReaderContent() {
       )}
 
       {quiz && (
-        <div className="page-shell mt-4 rounded-2xl border border-[var(--line)] bg-[var(--paper)] p-5">
+        <div className="page-shell-full mt-4 rounded-2xl border border-[var(--line)] bg-[var(--paper)] p-5">
           <h2 className="font-[family-name:var(--font-display)] text-2xl">
             Chapter quiz
           </h2>

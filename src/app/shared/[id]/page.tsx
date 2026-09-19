@@ -61,11 +61,11 @@ function SharedReaderContent() {
   }
 
   return (
-    <div className="page-shell pb-16">
+    <div className="page-shell-full pb-16">
       <Link href="/shared" className="text-sm text-[var(--muted)]">
         ← AksharaX Books
       </Link>
-      <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl">
+      <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl sm:text-4xl">
         {book.title}
       </h1>
       <p className="mt-1 text-sm text-[var(--muted)]">
@@ -86,9 +86,9 @@ function SharedReaderContent() {
         </select>
       </label>
       <div
-        className={`mt-8 ${fontClass(font)}`}
+        className={`mt-8 w-full max-w-none ${fontClass(font)}`}
         style={{
-          fontSize: user?.settings?.fontSize || 18,
+          fontSize: Math.max(user?.settings?.fontSize || 20, 20),
           lineHeight: user?.settings?.lineSpacing || 1.85,
         }}
       >

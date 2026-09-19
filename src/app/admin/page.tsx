@@ -4,11 +4,13 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAdmin } from "@/components/RequireAuth";
 import { sharedLibraryApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/ToastProvider";
 import type { SharedBookMeta } from "@/lib/types";
 import { OCR_LANG_OPTIONS } from "@/lib/types";
 
 function AdminContent() {
   const { token } = useAuth();
+  const toast = useToast();
   const [books, setBooks] = useState<SharedBookMeta[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -55,9 +57,12 @@ function AdminContent() {
       setDescription("");
       setFile(null);
       setMsg("Book uploaded and published");
+      toast.success("Book uploaded and published");
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setUploading(false);
     }
@@ -68,13 +73,18 @@ function AdminContent() {
     await sharedLibraryApi.adminUpdate(token, book._id, {
       published: !book.published,
     });
+    toast.success(book.published ? "Unpublished" : "Published");
     await load();
   }
 
   async function onDelete(id: string, name: string) {
     if (!token) return;
-    if (!confirm(`Delete “${name}”?`)) return;
+    const ok = await toast.confirm(`Delete “${name}”?`, {
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
     await sharedLibraryApi.adminDelete(token, id);
+    toast.success("Book deleted");
     await load();
   }
 
